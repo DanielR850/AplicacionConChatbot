@@ -1,0 +1,20 @@
+# Entorno virtual
+venv/
+
+# Compilación de PyInstaller
+build/
+dist/
+aplicacion/
+*.spec
+*.exe
+*.dll
+
+# Archivos pesados
+*.gguf
+
+# Archivos locales
+gestion_documentos.db
+debug_llm_output.txt
+documentos_subidos/
+__pycache__/
+*.pyc
