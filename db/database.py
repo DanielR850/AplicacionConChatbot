@@ -1,27 +1,19 @@
-import sqlite3
-import os
-import sys
+from db.conexion import conectar
 
 def crear_bd():
-    # Obtener la ruta absoluta correcta incluso en el .exe
-    base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    ruta_db = os.path.join(base_dir, "..", "gestion_documentos.db")
-    ruta_db = os.path.abspath(ruta_db)
-
-    conn = sqlite3.connect(ruta_db)
+    conn = conectar()
     cursor = conn.cursor()
 
-    # Crear tabla Usuarios
+    print(f"[DEBUG] Base de datos en: {conn}")  # opcional
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Usuarios (
             id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre_usuario TEXT NOT NULL,
-            correo TEXT UNIQUE,
+            correo TEXT UNIQUE NOT NULL,
             contraseña TEXT NOT NULL
         );
     """)
 
-    # Crear tabla Enlaces_Oficiales
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Enlaces_Oficiales (
             id_enlace INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +22,6 @@ def crear_bd():
         );
     """)
 
-    # Crear tabla Documentos
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS Documentos (
             id_documento INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +31,8 @@ def crear_bd():
             ruta_archivo TEXT NOT NULL,
             fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             fecha_vencimiento DATE NOT NULL,
+            dias_aviso INTEGER DEFAULT NULL,
+            correo_aviso TEXT DEFAULT NULL,
             FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE,
             FOREIGN KEY (id_enlace) REFERENCES Enlaces_Oficiales(id_enlace) ON DELETE CASCADE
         );
@@ -47,4 +40,3 @@ def crear_bd():
 
     conn.commit()
     conn.close()
-

@@ -1,13 +1,14 @@
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
-import sqlite3
 import os
 import sys
+from db.conexion import conectar
 
-def obtener_ruta_recurso(ruta_relativa):
-    base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
-    return os.path.join(base_path, ruta_relativa)
+if getattr(sys, 'frozen', False):
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class CrearUsuario(tk.Frame):
     def __init__(self, master):
@@ -15,7 +16,7 @@ class CrearUsuario(tk.Frame):
         self.master = master
         self.pack(fill="both", expand=True)
 
-        tk.Label(self, text="Crear Nuevo Usuario", font=("Helvetica", 14, "bold"), bg="white").pack(pady=10)
+        tk.Label(self, text="Crear Cuenta Nueva", font=("Helvetica", 14, "bold"), bg="white").pack(pady=10)
 
         canvas_h = tk.Canvas(self, width=800, height=2, bg="white", highlightthickness=0)
         canvas_h.place(x=0, y=35)
@@ -24,9 +25,9 @@ class CrearUsuario(tk.Frame):
         frame_form = tk.Frame(self, bg="white", width=280, height=250)
         frame_form.place(x=80, y=60)
 
-        tk.Label(frame_form, text="Usuario", font=("Arial", 10), bg="white").pack(pady=5)
-        self.entry_usuario = tk.Entry(frame_form, width=25)
-        self.entry_usuario.pack()
+        tk.Label(frame_form, text="Correo electrónico", font=("Arial", 10), bg="white").pack(pady=5)
+        self.entry_correo = tk.Entry(frame_form, width=25)
+        self.entry_correo.pack()
 
         tk.Label(frame_form, text="Contraseña", font=("Arial", 10), bg="white").pack(pady=5)
         self.entry_contra = tk.Entry(frame_form, width=25, show="*")
@@ -45,7 +46,13 @@ class CrearUsuario(tk.Frame):
         frame_img = tk.Frame(self, bg="white")
         frame_img.place(relx=0.55, rely=0.2)
 
-        ruta_imagen = obtener_ruta_recurso(os.path.join("assets", "iccons", "image.png"))
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.abspath(".")
+
+        ruta_imagen = os.path.join(base_path, "assets", "iccons", "image.png")
+
         if os.path.exists(ruta_imagen):
             imagen = Image.open(ruta_imagen)
             imagen = imagen.resize((150, 150))
@@ -59,26 +66,26 @@ class CrearUsuario(tk.Frame):
         canvas_h.create_line(0, 1, 800, 1, fill="black", width=2)
 
     def crear_usuario(self):
-        usuario = self.entry_usuario.get()
+        correo = self.entry_correo.get().strip()
         contra = self.entry_contra.get()
 
-        if not usuario or not contra:
+        if not correo or not contra:
             messagebox.showwarning("Campos vacíos", "Por favor completa todos los campos.")
             return
 
-        conn = sqlite3.connect("gestion_documentos.db")
-        cursor = conn.cursor()
-
         try:
-            cursor.execute("INSERT INTO Usuarios (nombre_usuario, contraseña) VALUES (?, ?)",
-                           (usuario, contra))
+            conn = conectar()
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO Usuarios (correo, contraseña) VALUES (?, ?)", (correo, contra))
             conn.commit()
-            messagebox.showinfo("Éxito", "Usuario creado correctamente.")
-            self.volver_login()
-        except sqlite3.IntegrityError:
-            messagebox.showerror("Error", "El usuario ya está registrado.")
-        finally:
             conn.close()
+            messagebox.showinfo("Éxito", "Cuenta creada correctamente.")
+            self.volver_login()
+
+        except sqlite3.IntegrityError:
+            messagebox.showerror("Error", "Ese correo ya está registrado.")
+        except Exception as e:
+            messagebox.showerror("Error inesperado", f"Ocurrió un error:\n{e}")
 
     def volver_login(self):
         from interfaces.login import Login

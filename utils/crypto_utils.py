@@ -1,8 +1,11 @@
 import os
 import tempfile
 from cryptography.fernet import Fernet
+import shutil
+import uuid
+from utils.rutas import obtener_ruta_clave
+KEY_FILE = obtener_ruta_clave()
 
-KEY_FILE = "clave.key"
 
 def generar_clave():
     clave = Fernet.generate_key()
@@ -27,22 +30,27 @@ def encriptar_archivo(ruta_archivo):
     with open(ruta_archivo, "wb") as file:
         file.write(datos_encriptados)
 
-def desencriptar_archivo(ruta_archivo):
-    clave = cargar_clave()
-    fernet = Fernet(clave)
+def desencriptar_archivo(ruta_cifrada):
+    try:
+        clave = cargar_clave()
+        fernet = Fernet(clave)
 
-    with open(ruta_archivo, "rb") as file:
-        datos_encriptados = file.read()
+        with open(ruta_cifrada, "rb") as file:
+            datos = file.read()
 
-    datos_desencriptados = fernet.decrypt(datos_encriptados)
+        datos_desencriptados = fernet.decrypt(datos)
 
-    # Crear archivo temporal desencriptado
-    nombre = os.path.basename(ruta_archivo)
-    temp_dir = os.path.join(tempfile.gettempdir(), "desencriptado")
-    os.makedirs(temp_dir, exist_ok=True)
-    ruta_temp = os.path.join(temp_dir, f"des_{nombre}")
+        nombre = os.path.basename(ruta_cifrada)
+        nombre_unico = f"{uuid.uuid4().hex}_{nombre}"
+        ruta_temp = os.path.join("temp", nombre_unico)
+        os.makedirs("temp", exist_ok=True)
 
-    with open(ruta_temp, "wb") as file:
-        file.write(datos_desencriptados)
+        with open(ruta_temp, "wb") as file:
+            file.write(datos_desencriptados)
 
-    return ruta_temp  # Devuelve ruta temporal
+        print(f"✅ Archivo desencriptado temporal: {ruta_temp}")
+        return os.path.abspath(ruta_temp)
+
+    except Exception as e:
+        print(f"❌ Error al desencriptar {ruta_cifrada}: {e}")
+        return None

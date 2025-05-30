@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkcalendar import Calendar
-import sqlite3
 import datetime
+
+from db.conexion import conectar
 
 class Calendario(tk.Frame):
     def __init__(self, master, id_usuario_actual=None):
@@ -55,7 +56,7 @@ class Calendario(tk.Frame):
         self.calendario.bind("<<CalendarSelected>>", self.fecha_seleccionada)
 
     def cargar_documentos(self):
-        conn = sqlite3.connect("gestion_documentos.db")
+        conn = conectar()
         cursor = conn.cursor()
 
         hoy = datetime.date.today()
@@ -77,7 +78,6 @@ class Calendario(tk.Frame):
             except:
                 continue
 
-            # Mostrar en el panel izquierdo solo los vencidos
             if fecha < hoy:
                 texto = f"{nombre}\n{fecha_str}"
                 tk.Label(self, text=texto, bg="#f5c6cb", wraplength=180,

@@ -1,42 +1,72 @@
+# main.py
+import os
+import sys
 import tkinter as tk
+from tkinter import messagebox
 from db.database import crear_bd
 from interfaces.login import Login
-from interfaces.menu_principal import MenuPrincipal
-from interfaces.ver_documentos import VerDocumentos
-from interfaces.ver_enlaces import VerEnlaces
-from interfaces.subir_documento import SubirDocumento
-from interfaces.Calendario import Calendario
-from interfaces.crear_usuario import CrearUsuario  # ✅ NUEVO IMPORT
+from utils.programar_tarea import programar_tarea_verificacion
+from utils.crypto_utils import generar_clave
+
+# Ruta base dependiendo de si es .exe o .py
+BASE_DIR = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(__file__))
+
+# ✅ Ruta a la clave de cifrado
+CLAVE_PATH = os.path.join(BASE_DIR, "clave.key")
+if not os.path.exists(CLAVE_PATH):
+    generar_clave()
+
+# ✅ Ejecutar tarea programada
+programar_tarea_verificacion()
+
+# ✅ Crear la base de datos en la carpeta /DBS si no existe
+crear_bd()
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Control de Documentos Oficiales")
         self.resizable(False, False)
-
-        crear_bd()  # Crea la base de datos si no existe
-
         self.current_frame = None
         self.mostrar_pantalla(Login)
 
     def mostrar_pantalla(self, pantalla_class, **kwargs):
-        # Destruir pantalla anterior si existe
-        if self.current_frame is not None:
-            self.current_frame.destroy()
+        try:
+            # 🔁 Destruir el frame anterior
+            if self.current_frame:
+                self.current_frame.destroy()
 
-        # Crear nueva pantalla
-        nueva_pantalla = pantalla_class(self, **kwargs) if kwargs else pantalla_class(self)
-        nueva_pantalla.pack(fill="both", expand=True)
-        self.current_frame = nueva_pantalla
+            # 🔁 Crear nueva pantalla
+            nueva_pantalla = pantalla_class(self, **kwargs)
+            nueva_pantalla.pack(fill="both", expand=True)
+            self.current_frame = nueva_pantalla
 
-        # Ajustar tamaño automáticamente según la pantalla
-        pantalla_nombre = pantalla_class.__name__
+            # ✅ Ajustar tamaño de ventana
+            nombre_pantalla = pantalla_class.__name__
+            if nombre_pantalla in ("Login", "CrearUsuario"):
+                width, height = 700, 400
+            else:
+                width, height = 900, 550
 
-        if pantalla_nombre in ("Login", "CrearUsuario"):  # ✅ Añadido CrearUsuario
-            self.geometry("650x350")
-        else:
-            self.geometry("900x500")
+            screen_width = self.winfo_screenwidth()
+            screen_height = self.winfo_screenheight()
+            x = int((screen_width - width) / 2)
+            y = int((screen_height - height) / 2)
+            self.geometry(f"{width}x{height}+{x}+{y}")
+
+            print(f"[DEBUG] Cambio a: {nombre_pantalla}")
+
+        except Exception as e:
+            import traceback
+            with open("pantalla_error_log.txt", "w", encoding="utf-8") as f:
+                f.write(traceback.format_exc())
+            messagebox.showerror("Error crítico", "Ocurrió un error al cambiar de pantalla.\n\nDetalles en pantalla_error_log.txt")
 
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    try:
+        app = App()
+        app.mainloop()
+    except Exception as e:
+        import traceback
+        with open("error_log.txt", "a", encoding="utf-8") as f:
+            f.write(traceback.format_exc())
